@@ -1,36 +1,58 @@
-influxdb:
-  image: influxdb:latest
-  container_name: influxdb
-  ports:
-    - "8083:8083"
-    - "8086:8086"
-    - "8090:8090"
-  env_file:
-    - 'env.influxdb'
-  volumes:
-    # Data persistency
-    # sudo mkdir -p /srv/docker/influxdb/data
-    - /srv/docker/influxdb/data:/var/lib/influxdb
+version: '2'
+services:
+  influxdb:
+    image: influxdb:latest
+    container_name: influxdb
+    ports:
+      - "8083:8083"
+      - "8086:8086"
+      - "8090:8090"
+    env_file:
+      - 'env.influxdb'
+    volumes:
+      # Data persistency
+      # sudo mkdir -p /srv/docker/influxdb/data
+      - /srv/docker/influxdb/data:/var/lib/influxdb
+    networks:
+      - laradock_backend
+      - laradock_frontend
 
-telegraf:
-  image: telegraf:latest
-  container_name: telegraf
-  links:
-    - influxdb
-  volumes:
-    - ./telegraf.conf:/etc/telegraf/telegraf.conf:ro
+  telegraf:
+    image: telegraf:latest
+    container_name: telegraf
+    links:
+      - influxdb
+    volumes:
+      - ./telegraf.conf:/etc/telegraf/telegraf.conf:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    networks:
+      - laradock_backend
+    external_links:
+      - elasticsearch:elasticsearch
+      - mongo:mongo
+      - php-fpm:php-fpm
+      - nginx:nginx
 
-grafana:
-  image: grafana/grafana:latest
-  container_name: grafana
-  ports:
-    - "3000:3000"
-  env_file:
-    - 'env.grafana'
-  user: "0"
-  links:
-    - influxdb
-  volumes:
-    # Data persistency
-    # sudo mkdir -p /srv/docker/grafana/data; chown 472:472 /srv/docker/grafana/data
-    - /srv/docker/grafana/data:/var/lib/grafana
+  grafana:
+    image: grafana/grafana:latest
+    container_name: grafana
+    ports:
+      - "3000:3000"
+    env_file:
+      - 'env.grafana'
+    user: "0"
+    links:
+      - influxdb
+    volumes:
+      # Data persistency
+      # sudo mkdir -p /srv/docker/grafana/data; chown 472:472 /srv/docker/grafana/data
+      - /srv/docker/grafana/data:/var/lib/grafana
+    networks:
+      - laradock_backend
+      - laradock_frontend
+
+networks:
+  laradock_backend:
+    external: true
+  laradock_frontend:
+    external: true
